@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rice Flight Log</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#EEF1F4; --surface:#FFFFFF; --surface-alt:#E4EAEF; --surface-raised:#FFFFFF;
+    --ink:#16222C; --ink-muted:#5E6E7C; --ink-faint:#8B9AA7;
+    --accent:#B87226; --accent-ink:#FFFFFF; --accent-soft:#F1DFC4;
+    --accent2:#2F6690; --accent2-soft:#D9E8F1;
+    --border:#D2DAE1; --border-soft:#E4E9ED;
+    --good:#2E7D4F; --good-soft:#DCEEE1;
+    --warn:#B8562B; --warn-soft:#F5E1D6;
+    --shadow: 0 1px 2px rgba(22,34,44,.06), 0 8px 24px -12px rgba(22,34,44,.18);
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E161E; --surface:#16212B; --surface-alt:#1C2933; --surface-raised:#1B2731;
+      --ink:#E7EDF2; --ink-muted:#93A6B5; --ink-faint:#63748266;
+      --accent:#E3A94E; --accent-ink:#20140A; --accent-soft:#3A2C15;
+      --accent2:#6FAEDD; --accent2-soft:#173347;
+      --border:#29394A; --border-soft:#1F2E3B;
+      --good:#5FB37D; --good-soft:#173625;
+      --warn:#E08A5C; --warn-soft:#3A2419;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E161E; --surface:#16212B; --surface-alt:#1C2933; --surface-raised:#1B2731;
+    --ink:#E7EDF2; --ink-muted:#93A6B5; --ink-faint:#63748266;
+    --accent:#E3A94E; --accent-ink:#20140A; --accent-soft:#3A2C15;
+    --accent2:#6FAEDD; --accent2-soft:#173347;
+    --border:#29394A; --border-soft:#1F2E3B;
+    --good:#5FB37D; --good-soft:#173625;
+    --warn:#E08A5C; --warn-soft:#3A2419;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px -14px rgba(0,0,0,.6);
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"IBM Plex Sans", system-ui, sans-serif;
+    font-size:14px; line-height:1.5;
+  }
+  .wrap{ max-width:1180px; margin:0 auto; padding:28px 24px 80px; }
+
+  /* ---------- Header ---------- */
+  header.top{
+    display:flex; justify-content:space-between; align-items:flex-end; gap:20px;
+    padding-bottom:20px; margin-bottom:24px; border-bottom:1px solid var(--border);
+    flex-wrap:wrap;
+  }
+  .brand{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+  .brand .mark{
+    font-family:"Big Shoulders Display", sans-serif; font-weight:900; font-size:38px;
+    letter-spacing:.01em; color:var(--ink); text-transform:uppercase; line-height:.9;
+  }
+  .brand .mark span{ color:var(--accent); }
+  .brand .tag{
+    font-family:"IBM Plex Mono", monospace; font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--ink-muted); padding:3px 9px;
+    border:1px solid var(--border); border-radius:100px; white-space:nowrap;
+  }
+  .pilot-line{ font-size:13px; color:var(--ink-muted); margin-top:4px; }
+  .pilot-line b{ color:var(--ink); font-weight:600; }
+  .top-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+
+  button{ font-family:inherit; cursor:pointer; }
+  .btn{
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--surface); color:var(--ink); border:1px solid var(--border);
+    padding:8px 14px; border-radius:8px; font-size:13px; font-weight:500;
+    transition:background .15s, border-color .15s;
+  }
+  .btn:hover{ background:var(--surface-alt); }
+  .btn:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible{
+    outline:2px solid var(--accent2); outline-offset:2px;
+  }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:600; }
+  .btn.primary:hover{ filter:brightness(1.05); }
+  .btn svg{ width:14px; height:14px; }
+
+  /* ---------- Notice ---------- */
+  .notice{
+    display:flex; gap:12px; align-items:flex-start;
+    background:var(--accent2-soft); border:1px solid var(--accent2);
+    border-radius:var(--radius); padding:13px 16px; margin-bottom:24px; font-size:13px;
+    color:var(--ink);
+  }
+  .notice svg{ width:17px; height:17px; flex:none; margin-top:1px; color:var(--accent2); }
+  .notice b{ font-weight:600; }
+  .notice a.linklike{ color:var(--accent2); text-decoration:underline; cursor:pointer; background:none; border:none; padding:0; font:inherit; }
+
+  /* ---------- KPI row ---------- */
+  .kpis{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:26px; }
+  .kpi{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px 18px; box-shadow:var(--shadow);
+  }
+  .kpi .label{ font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-muted); font-weight:600; }
+  .kpi .value{
+    font-family:"Big Shoulders Display", sans-serif; font-weight:800; font-size:34px;
+    color:var(--ink); font-variant-numeric:tabular-nums; line-height:1.15; margin-top:4px;
+  }
+  .kpi .value small{ font-family:"IBM Plex Sans"; font-size:13px; font-weight:500; color:var(--ink-muted); margin-left:4px; }
+  .kpi .sub{ font-size:12px; color:var(--ink-muted); margin-top:2px; }
+
+  /* ---------- Panels / charts ---------- */
+  .grid2{ display:grid; grid-template-columns:1.15fr .85fr; gap:16px; margin-bottom:16px; }
+  .panel{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:18px 20px 16px;
+  }
+  .panel h2{
+    font-family:"Big Shoulders Display", sans-serif; font-weight:700; font-size:19px;
+    text-transform:uppercase; letter-spacing:.02em; margin:0 0 2px;
+  }
+  .panel .panel-sub{ font-size:12px; color:var(--ink-muted); margin-bottom:14px; }
+  .barchart{ display:flex; flex-direction:column; gap:9px; }
+  .barrow{ display:grid; grid-template-columns:104px 1fr 52px; align-items:center; gap:10px; }
+  .barrow .bl{ font-size:12.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bartrack{ background:var(--surface-alt); border-radius:5px; height:16px; overflow:hidden; }
+  .barfill{ height:100%; background:var(--accent2); border-radius:5px 0 0 5px; }
+  .barrow .bv{ font-family:"IBM Plex Mono", monospace; font-size:12px; text-align:right; color:var(--ink-muted); font-variant-numeric:tabular-nums; }
+  .barrow.top .barfill{ background:var(--accent); }
+
+  svg.trend{ width:100%; height:150px; display:block; }
+  svg.trend .axis{ stroke:var(--border); stroke-width:1; }
+  svg.trend .gridline{ stroke:var(--border-soft); stroke-width:1; }
+  svg.trend .area{ fill:var(--accent2-soft); }
+  svg.trend .line{ fill:none; stroke:var(--accent2); stroke-width:2; }
+  svg.trend .dot{ fill:var(--accent2); }
+  svg.trend .dot.end{ fill:var(--accent); r:3.4; }
+  svg.trend text{ font-family:"IBM Plex Mono", monospace; font-size:10px; fill:var(--ink-muted); }
+
+  /* ---------- Tabs ---------- */
+  .tabbar{ display:flex; gap:4px; margin:30px 0 14px; border-bottom:1px solid var(--border); }
+  .tabbtn{
+    background:none; border:none; padding:10px 4px; margin-right:22px; font-size:14px;
+    font-weight:600; color:var(--ink-muted); border-bottom:2px solid transparent; position:relative; top:1px;
+  }
+  .tabbtn.active{ color:var(--ink); border-bottom-color:var(--accent); }
+  .tabpanel{ display:none; }
+  .tabpanel.active{ display:block; }
+
+  .toolbar{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+  .search{
+    display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--border);
+    border-radius:8px; padding:7px 12px; min-width:240px; flex:1; max-width:360px;
+  }
+  .search svg{ width:14px; height:14px; color:var(--ink-faint); flex:none; }
+  .search input{ border:none; outline:none; background:none; color:var(--ink); font-size:13px; width:100%; font-family:inherit; }
+  .search input::placeholder{ color:var(--ink-faint); }
+  .toolbar .right-tools{ display:flex; gap:8px; }
+
+  .tablewrap{ overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow); }
+  table{ width:100%; border-collapse:collapse; font-size:13px; min-width:640px; }
+  thead th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-muted);
+    font-weight:600; padding:10px 14px; background:var(--surface-alt); border-bottom:1px solid var(--border);
+    white-space:nowrap; position:sticky; top:0;
+  }
+  tbody td{ padding:9px 14px; border-bottom:1px solid var(--border-soft); vertical-align:top; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:var(--surface-alt); }
+  td.num, th.num{ text-align:right; font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; }
+  td.mono{ font-family:"IBM Plex Mono", monospace; font-size:12.5px; }
+  td.remarks{ max-width:420px; color:var(--ink-muted); font-size:12.5px; }
+  .pill{ display:inline-block; padding:2px 8px; border-radius:100px; font-size:11px; font-weight:600; }
+  .pill.src{ background:var(--surface-alt); color:var(--ink-muted); font-family:"IBM Plex Mono", monospace; }
+  .empty-row td{ text-align:center; color:var(--ink-faint); padding:26px; font-style:italic; }
+
+  /* ---------- Add-flight form ---------- */
+  .addform{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:16px 20px; margin-bottom:16px; display:none;
+  }
+  .addform.open{ display:block; }
+  .addform h3{ font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-muted); margin:0 0 12px; font-weight:700; }
+  .formgrid{ display:grid; grid-template-columns:repeat(6,1fr); gap:10px; }
+  .formgrid label{ display:flex; flex-direction:column; gap:4px; font-size:11px; color:var(--ink-muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+  .formgrid input{
+    font-family:"IBM Plex Mono", monospace; font-size:13px; padding:7px 9px; border:1px solid var(--border);
+    border-radius:6px; background:var(--bg); color:var(--ink);
+  }
+  .formactions{ display:flex; gap:8px; margin-top:12px; }
+  .formstatus{ font-size:12px; color:var(--ink-muted); margin-left:4px; align-self:center; }
+
+  footer{ margin-top:36px; padding-top:16px; border-top:1px solid var(--border); font-size:12px; color:var(--ink-faint); }
+
+  @media (max-width: 900px){
+    .kpis{ grid-template-columns:repeat(2,1fr); }
+    .grid2{ grid-template-columns:1fr; }
+    .formgrid{ grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="brand">
+        <div class="mark">Rice <span>Flight</span> Log</div>
+        <span class="tag" id="dbstate">connecting&hellip;</span>
+      </div>
+      <div class="pilot-line"><b>Russell T. Rice</b> &middot; Log Book 1 of 4 &middot; digitized from photographed logbook pages</div>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="exportBtn" title="Download the data behind this page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        Export CSV
+      </button>
+      <button class="btn primary" id="addFlightBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add flight
+      </button>
+    </div>
+  </header>
+
+  <div class="notice">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-5"/><path d="M12 8h.01"/></svg>
+    <div>
+      <b>New capture method confirmed working:</b> a 10-photo test batch shooting each open spread in a single photo (both facing pages at once) came back fully legible on both sides. 3 of those pages matched already-known flights exactly (row-level aircraft, route &amp; remarks); the other 6 are loaded as page totals for now, pending a closer row-by-row pass.
+      See <button class="linklike" id="howLink">How this works</button> for details.
+    </div>
+  </div>
+
+  <section class="kpis" id="kpis">
+    <div class="kpi"><div class="label">Total hours logged</div><div class="value">&hellip;</div><div class="sub">&nbsp;</div></div>
+    <div class="kpi"><div class="label">Flights (row-level detail)</div><div class="value">&hellip;</div><div class="sub">&nbsp;</div></div>
+    <div class="kpi"><div class="label">Photos transcribed</div><div class="value">&hellip;</div><div class="sub">&nbsp;</div></div>
+    <div class="kpi"><div class="label">Date range covered</div><div class="value">&hellip;</div><div class="sub">&nbsp;</div></div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel">
+      <h2>Hours by aircraft</h2>
+      <div class="panel-sub">Total duration by aircraft type</div>
+      <div class="barchart" id="acChart"></div>
+    </div>
+    <div class="panel">
+      <h2>Hours per page</h2>
+      <div class="panel-sub">Total duration, in the order pages were photographed</div>
+      <svg class="trend" id="trendChart" viewBox="0 0 400 150" preserveAspectRatio="none"></svg>
+    </div>
+  </section>
+
+  <div class="tabbar">
+    <button class="tabbtn active" data-tab="flights">Flights <span id="ct-flights"></span></button>
+    <button class="tabbtn" data-tab="about">How this works</button>
+  </div>
+
+  <div class="tabpanel active" id="tab-flights">
+    <div class="addform" id="addForm">
+      <h3>Add a flight</h3>
+      <div class="formgrid">
+        <label>Date <input type="text" id="f-date" placeholder="4/16/2003"></label>
+        <label>Aircraft <input type="text" id="f-aircraft" placeholder="C-525A"></label>
+        <label>Ident <input type="text" id="f-ident" placeholder="N271GS"></label>
+        <label>From <input type="text" id="f-from" placeholder="ICT"></label>
+        <label>To <input type="text" id="f-to" placeholder="TRI"></label>
+        <label>Duration (hrs) <input type="text" id="f-duration" placeholder="2.0"></label>
+        <label>Day landings <input type="text" id="f-day" placeholder="1"></label>
+        <label>Night landings <input type="text" id="f-night" placeholder="0"></label>
+        <label>Source photo <input type="text" id="f-source" placeholder="IMG_0221"></label>
+      </div>
+      <div class="formactions">
+        <button class="btn primary" id="saveFlightBtn">Save flight</button>
+        <button class="btn" id="cancelFlightBtn">Cancel</button>
+        <span class="formstatus" id="formStatus"></span>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="flightSearch" placeholder="Search date, aircraft, route&hellip;">
+      </div>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Aircraft</th><th>Ident</th><th>From</th><th>To</th>
+          <th class="num">Hrs</th><th class="num">Day Ldg</th><th class="num">Night Ldg</th><th>Source</th><th>Remarks</th>
+        </tr></thead>
+        <tbody id="flightsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tabpanel" id="tab-about">
+    <div class="panel" style="max-width:760px">
+      <h2>How this page works</h2>
+      <div class="panel-sub">&nbsp;</div>
+      <p style="margin:0 0 12px">A pilot logbook records each flight across two facing pages: a left-hand page (date, aircraft, route, landings) and a right-hand page (night/instrument/cross-country hours, pilot-in-command time, remarks) for the <i>same</i> flights. Photographing the two sides separately turned out to be hard to keep paired up &mdash; a right-hand page carries no date, so matching it back to the correct left-hand page after the fact isn't reliable.</p>
+      <p style="margin:0 0 12px"><b>Current method:</b> photograph each open spread in a single photo, both facing pages at once. Every row of data &mdash; date, aircraft, route, duration, landings, remarks &mdash; comes from one photo and one transcription pass, with nothing to match up afterward. A 10-photo test batch confirmed this reads just as clearly as single-page photos did.</p>
+      <p style="margin:0 0 12px">Some rows in the table below are full flight-by-flight detail (date/aircraft/route per row); a few are still page-level totals (marked "page total, not itemized" in the remarks) from pages transcribed quickly to validate the method &mdash; those will get broken out row-by-row in a follow-up pass.</p>
+      <p style="margin:0 0 12px">Bring new batches of photos to a Claude session to transcribe (handwriting reads far more reliably by having Claude look at the photo directly than through OCR software) &mdash; the results get added here as flights.</p>
+      <p style="margin:0">This page's data lives in a Cloudflare D1 database behind this site, so it stays up to date across visits and devices for anyone with the link. Use <b>Export CSV</b> any time to get the raw data out.</p>
+    </div>
+  </div>
+
+  <footer>Rice Flight Log &middot; data transcribed from Russell's photographed logbook pages &middot; figures are best-effort reads of handwritten totals &mdash; spot-check against source photos before relying on exact numbers.</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var state = { flights: [], flightsReady:false };
+
+  function esc(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function num(v){ var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+  function fmt1(n){ return (Math.round(n*10)/10).toFixed(1); }
+
+  function parseDateForSort(d){
+    if(!d) return 0;
+    var s = String(d).trim();
+    var m = s.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+    if(!m) return 0;
+    var mo = parseInt(m[1],10), da = parseInt(m[2],10);
+    var yr = m[3] ? (m[3].length===2 ? 2000+parseInt(m[3],10) : parseInt(m[3],10)) : 2000;
+    return yr*10000 + mo*100 + da;
+  }
+
+  /* ---------------- rendering ---------------- */
+
+  function renderKpis(){
+    var flights = state.flights;
+    var totalHrs = flights.reduce(function(a,f){ return a + num(f.duration); }, 0);
+    var kpiEls = document.querySelectorAll('#kpis .kpi');
+
+    kpiEls[0].querySelector('.value').innerHTML = fmt1(totalHrs) + '<small>hrs</small>';
+    kpiEls[0].querySelector('.sub').textContent = 'across ' + flights.length + ' logged rows';
+
+    var itemized = flights.filter(function(f){ return f.date !== '(page)'; });
+    kpiEls[1].querySelector('.value').textContent = itemized.length;
+    var uniqueAc = {};
+    flights.forEach(function(f){ if(f.aircraft) uniqueAc[f.aircraft] = 1; });
+    kpiEls[1].querySelector('.sub').textContent = Object.keys(uniqueAc).length + ' aircraft types';
+
+    var uniqueSources = {};
+    flights.forEach(function(f){ if(f.source) uniqueSources[f.source] = 1; });
+    kpiEls[2].querySelector('.value').textContent = Object.keys(uniqueSources).length;
+    kpiEls[2].querySelector('.sub').textContent = 'photos represented';
+
+    var dates = flights.map(function(f){ return parseDateForSort(f.date); }).filter(function(x){ return x>0; });
+    if(dates.length){
+      var lo = Math.min.apply(null,dates), hi = Math.max.apply(null,dates);
+      var loY = Math.floor(lo/10000), hiY = Math.floor(hi/10000);
+      kpiEls[3].querySelector('.value').textContent = loY===hiY ? String(loY) : (loY + '–' + hiY);
+    } else {
+      kpiEls[3].querySelector('.value').textContent = '—';
+    }
+    kpiEls[3].querySelector('.sub').textContent = 'from dated rows';
+  }
+
+  function renderAircraftChart(){
+    var totals = {};
+    state.flights.forEach(function(f){
+      var key = (f.aircraft || 'Unknown').trim();
+      totals[key] = (totals[key]||0) + num(f.duration);
+    });
+    var rows = Object.keys(totals).map(function(k){ return {label:k, hrs:totals[k]}; });
+    rows.sort(function(a,b){ return b.hrs - a.hrs; });
+    var max = rows.length ? rows[0].hrs : 1;
+    var el = document.getElementById('acChart');
+    if(!rows.length){ el.innerHTML = '<div style="color:var(--ink-faint);font-style:italic;font-size:13px;">No matched flights yet.</div>'; return; }
+    el.innerHTML = rows.map(function(r, i){
+      var pct = max>0 ? Math.max(3, (r.hrs/max*100)) : 0;
+      return '<div class="barrow' + (i===0 ? ' top' : '') + '"><div class="bl" title="'+esc(r.label)+'">'+esc(r.label)+'</div>' +
+        '<div class="bartrack"><div class="barfill" style="width:'+pct+'%"></div></div>' +
+        '<div class="bv">' + fmt1(r.hrs) + '</div></div>';
+    }).join('');
+  }
+
+  function renderTrendChart(){
+    var bySource = {};
+    state.flights.forEach(function(f){
+      var src = f.source || '?';
+      bySource[src] = (bySource[src] || 0) + num(f.duration);
+    });
+    var pages = Object.keys(bySource).map(function(src){
+      var m = src.match(/(\d+)/);
+      return { source: src, hrs: bySource[src], sortKey: m ? parseInt(m[1],10) : 0 };
+    }).sort(function(a,b){ return a.sortKey - b.sortKey; });
+    var svg = document.getElementById('trendChart');
+    if(!pages.length){ svg.innerHTML = ''; return; }
+    var W=400,H=150,padL=28,padR=10,padT=10,padB=20;
+    var vals = pages.map(function(p){ return p.hrs; });
+    var max = Math.max.apply(null, vals.concat([1]));
+    var x = function(i){ return padL + (i/(Math.max(1,pages.length-1))) * (W-padL-padR); };
+    var y = function(v){ return H-padB - (v/max) * (H-padT-padB); };
+
+    var pathPts = vals.map(function(v,i){ return x(i)+','+y(v); }).join(' L ');
+    var areaPts = 'M ' + x(0) + ',' + y(0) + ' L ' + pathPts + ' L ' + x(vals.length-1) + ',' + (H-padB) + ' L ' + x(0) + ',' + (H-padB) + ' Z';
+
+    var gridlines = '';
+    for(var g=0; g<=2; g++){
+      var gv = max*g/2, gy = y(gv);
+      gridlines += '<line class="gridline" x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'"/>' +
+        '<text x="2" y="'+(gy+3)+'">'+Math.round(gv)+'</text>';
+    }
+    var dots = vals.map(function(v,i){
+      var cls = (i===vals.length-1) ? 'dot end' : 'dot';
+      return '<circle class="'+cls+'" cx="'+x(i)+'" cy="'+y(v)+'" r="2.2"><title>'+esc(pages[i].source||'')+': '+fmt1(v)+' hrs</title></circle>';
+    }).join('');
+
+    svg.innerHTML =
+      gridlines +
+      '<line class="axis" x1="'+padL+'" y1="'+(H-padB)+'" x2="'+(W-padR)+'" y2="'+(H-padB)+'"/>' +
+      '<path class="area" d="'+areaPts+'"/>' +
+      '<path class="line" d="M ' + pathPts + '"/>' +
+      dots;
+  }
+
+  function renderFlightsTable(filterText){
+    var body = document.getElementById('flightsBody');
+    var rows = state.flights.slice().sort(function(a,b){ return parseDateForSort(a.date)-parseDateForSort(b.date); });
+    if(filterText){
+      var q = filterText.toLowerCase();
+      rows = rows.filter(function(f){
+        return [f.date,f.aircraft,f.ident,f.from,f.to,f.source,f.remarks].join(' ').toLowerCase().indexOf(q) !== -1;
+      });
+    }
+    document.getElementById('ct-flights').textContent = '(' + state.flights.length + ')';
+    if(!rows.length){
+      body.innerHTML = '<tr class="empty-row"><td colspan="10">' + (state.flightsReady ? 'No flights match your search.' : 'Loading…') + '</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map(function(f){
+      return '<tr>' +
+        '<td class="mono">' + esc(f.date) + (f.year ? '/' + esc(f.year) : '') + '</td>' +
+        '<td>' + esc(f.aircraft) + '</td>' +
+        '<td class="mono">' + esc(f.ident) + '</td>' +
+        '<td class="mono">' + esc(f.from) + '</td>' +
+        '<td class="mono">' + esc(f.to) + '</td>' +
+        '<td class="num">' + fmt1(num(f.duration)) + '</td>' +
+        '<td class="num">' + (f.dayLandings||0) + '</td>' +
+        '<td class="num">' + (f.nightLandings||0) + '</td>' +
+        '<td><span class="pill src">' + esc(f.source) + '</span></td>' +
+        '<td class="remarks">' + esc(f.remarks||'') + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  function renderAll(){
+    renderKpis();
+    renderAircraftChart();
+    renderTrendChart();
+    renderFlightsTable(document.getElementById('flightSearch').value);
+  }
+
+  /* ---------------- wiring ---------------- */
+
+  document.querySelectorAll('.tabbtn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.tabbtn').forEach(function(b){ b.classList.remove('active'); });
+      document.querySelectorAll('.tabpanel').forEach(function(p){ p.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+  document.getElementById('howLink').addEventListener('click', function(){
+    document.querySelector('.tabbtn[data-tab="about"]').click();
+    window.scrollTo({top: document.querySelector('.tabbar').offsetTop - 20, behavior:'smooth'});
+  });
+
+  document.getElementById('flightSearch').addEventListener('input', function(){ renderFlightsTable(this.value); });
+
+  document.getElementById('addFlightBtn').addEventListener('click', function(){
+    document.getElementById('addForm').classList.add('open');
+  });
+  document.getElementById('cancelFlightBtn').addEventListener('click', function(){
+    document.getElementById('addForm').classList.remove('open');
+    document.getElementById('formStatus').textContent = '';
+  });
+
+  document.getElementById('saveFlightBtn').addEventListener('click', function(){
+    var status = document.getElementById('formStatus');
+    var rec = {
+      date: document.getElementById('f-date').value.trim(),
+      aircraft: document.getElementById('f-aircraft').value.trim(),
+      ident: document.getElementById('f-ident').value.trim(),
+      from: document.getElementById('f-from').value.trim(),
+      to: document.getElementById('f-to').value.trim(),
+      duration: num(document.getElementById('f-duration').value),
+      dayLandings: num(document.getElementById('f-day').value),
+      nightLandings: num(document.getElementById('f-night').value),
+      source: document.getElementById('f-source').value.trim(),
+      logbook: "1"
+    };
+    if(!rec.date || !rec.aircraft){ status.textContent = 'Date and aircraft are required.'; return; }
+    status.textContent = 'Saving…';
+    fetch('/api/flights', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(rec)
+    }).then(function(res){
+      if(!res.ok) throw new Error('save failed');
+      return res.json();
+    }).then(function(){
+      status.textContent = 'Saved.';
+      ['f-date','f-aircraft','f-ident','f-from','f-to','f-duration','f-day','f-night','f-source'].forEach(function(id){
+        document.getElementById(id).value = '';
+      });
+      return loadFlights();
+    }).then(function(){
+      setTimeout(function(){
+        document.getElementById('addForm').classList.remove('open');
+        status.textContent = '';
+      }, 700);
+    }).catch(function(err){
+      status.textContent = 'Could not save (' + (err && err.message || 'error') + ').';
+    });
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', function(){
+    window.location.href = '/api/export.csv';
+  });
+
+  /* ---------------- data loading ---------------- */
+
+  function loadFlights(){
+    var badge = document.getElementById('dbstate');
+    return fetch('/api/flights').then(function(res){
+      if(!res.ok) throw new Error('load failed');
+      return res.json();
+    }).then(function(flights){
+      state.flights = flights;
+      state.flightsReady = true;
+      badge.textContent = 'live';
+      badge.title = 'Connected to the Cloudflare D1 database behind this site.';
+      renderAll();
+    }).catch(function(){
+      badge.textContent = 'offline';
+      badge.title = 'Could not reach the API — showing no data.';
+      state.flightsReady = true;
+      renderAll();
+    });
+  }
+
+  renderAll();
+  loadFlights();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "rice-flight-log",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-09-25",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rice-flight-log",
+      // Replace with the database_id printed by `npm run db:create`.
+      "database_id": "9f0a2f0a-d9fe-467f-954b-8915e40f39c4"
+    }
+  ]
+}

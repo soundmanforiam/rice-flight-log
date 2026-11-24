@@ -22,7 +22,7 @@
   ],
   "vars": {
     // Cloudflare Access (sign-in for editing). Fill both in after creating the Access app.
-    "ACCESS_TEAM_DOMAIN": "",
-    "ACCESS_AUD": ""
+    "ACCESS_TEAM_DOMAIN": "green-dust-df0c.cloudflareaccess.com",
+    "ACCESS_AUD": "d2ae356a015356b6eeb06461ad212a8357a407bba5ceb120a44e0f55e9bbb308"
   }
 }

@@ -1,18 +1,28 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "rice-flight-log",
+  // Russell@riceaviation.com's Cloudflare account (moved here 2026-11-24 from the soundmanforiam account).
+  "account_id": "302e2be2375904bda00e35d419f910d6",
   "main": "src/index.ts",
   "compatibility_date": "2024-09-25",
   "assets": {
     "directory": "./public",
     "binding": "ASSETS"
   },
+  "routes": [
+    { "pattern": "flight-log.riceaviation.com", "custom_domain": true }
+  ],
+  "workers_dev": true,
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "rice-flight-log",
-      // Replace with the database_id printed by `npm run db:create`.
-      "database_id": "9f0a2f0a-d9fe-467f-954b-8915e40f39c4"
+      "database_id": "6f37abbc-b38c-470c-93ee-b31f38751514"
     }
-  ]
+  ],
+  "vars": {
+    // Cloudflare Access (sign-in for editing). Fill both in after creating the Access app.
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUD": ""
+  }
 }

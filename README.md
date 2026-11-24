@@ -130,3 +130,25 @@ Two ways:
   real website with real file storage — unlike the Claude Artifact, which had nowhere
   to put binary images. A simple approach: upload the source photos into an R2 bucket
   or into `public/photos/`, and change the source pill in `index.html` to a link.
+
+## Logbooks LB1-LB3 (added Nov 2026)
+
+Three more logbooks were transcribed from photos (`logbook/injest/new/LB1-3`):
+LB1 = Jeppesen book, Mar 1983-Oct 1986; LB2 = two AOPA books, Oct 1986-Mar 2002;
+LB3 = same brand as Book 1, Jan 2024-Sep 2026. Rows use ids `lb1-0001...`, `logbook` = `LB1`/`LB2`/`LB3`,
+and `source` = `LB2/IMG_0168` style (the photo numbers repeat across folders).
+
+These books have more columns than Book 1, so `migrations/0002_add_logbook_columns.sql` adds them
+(single/multi engine, jet, rotorcraft, glider, retract, night, actual/simulated instrument, sim trainer,
+approaches, cross-country, PIC, SIC, dual received, solo, ground instruction). The API returns and accepts
+them in camelCase (`nightTime`, `actualInstrument`, `pic`, ...), and the CSV export includes them.
+
+To apply on the live database (needs wrangler logged into the account that owns the D1 db):
+
+```
+npm run db:add-columns:remote
+npm run db:load-lb1-3:remote
+```
+
+The load file uses `INSERT OR REPLACE`, so it is safe to re-run. **Do not run `db:migrate:remote`** on the
+live database: `schema.sql` drops and recreates the table.

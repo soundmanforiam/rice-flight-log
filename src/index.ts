@@ -17,6 +17,38 @@ interface FlightRecord {
   source?: string | null;
   logbook?: string | null;
   remarks?: string | null;
+  [extra: string]: unknown;
+}
+
+
+// Extra logbook columns (added in migrations/0002). camelCase API name -> D1 column.
+const EXTRA_COLUMNS: Record<string, string> = {
+  singleEngine: 'single_engine',
+  multiEngine: 'multi_engine',
+  jet: 'jet',
+  rotorcraft: 'rotorcraft',
+  glider: 'glider',
+  retract: 'retract',
+  nightTime: 'night_time',
+  actualInstrument: 'actual_instrument',
+  simulatedInstrument: 'simulated_instrument',
+  simTrainer: 'sim_trainer',
+  approaches: 'approaches',
+  approachTypes: 'approach_types',
+  crossCountry: 'cross_country',
+  pic: 'pic',
+  sic: 'sic',
+  dualReceived: 'dual_received',
+  solo: 'solo',
+  groundInstruction: 'ground_instruction',
+};
+const TEXT_EXTRAS = new Set(['approachTypes']);
+
+function extraValue(key: string, v: unknown): string | number | null {
+  if (v === null || v === undefined || v === '') return null;
+  if (TEXT_EXTRAS.has(key)) return String(v);
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8' };
@@ -43,6 +75,7 @@ function rowToFlight(row: Record<string, unknown>) {
     source: row.source,
     logbook: row.logbook,
     remarks: row.remarks,
+    ...Object.fromEntries(Object.entries(EXTRA_COLUMNS).map(([k, col]) => [k, row[col] ?? null])),
   };
 }
 
@@ -109,6 +142,7 @@ async function createFlight(env: Env, body: FlightRecord): Promise<Response> {
     )
     .run();
 
+  await writeExtras(env, id, body);
   const row = await env.DB.prepare('SELECT * FROM flights WHERE id = ?').bind(id).first();
   return json(rowToFlight(row as Record<string, unknown>), { status: 201 });
 }
@@ -144,8 +178,18 @@ async function updateFlight(env: Env, id: string, body: FlightRecord): Promise<R
     )
     .run();
 
+  await writeExtras(env, id, body);
   const row = await env.DB.prepare('SELECT * FROM flights WHERE id = ?').bind(id).first();
   return json(rowToFlight(row as Record<string, unknown>));
+}
+
+async function writeExtras(env: Env, id: string, body: FlightRecord): Promise<void> {
+  const keys = Object.keys(EXTRA_COLUMNS).filter((k) => k in body);
+  if (!keys.length) return;
+  const sets = keys.map((k) => `${EXTRA_COLUMNS[k]} = ?`).join(', ');
+  await env.DB.prepare(`UPDATE flights SET ${sets} WHERE id = ?`)
+    .bind(...keys.map((k) => extraValue(k, body[k])), id)
+    .run();
 }
 
 async function deleteFlight(env: Env, id: string): Promise<Response> {
@@ -164,7 +208,7 @@ async function exportCsv(env: Env): Promise<Response> {
   const { results } = await env.DB.prepare(
     'SELECT * FROM flights ORDER BY year IS NULL, year, date'
   ).all();
-  const cols = ['date', 'year', 'aircraft', 'ident', 'from', 'to', 'duration', 'dayLandings', 'nightLandings', 'source', 'remarks'];
+  const cols = ['date', 'year', 'aircraft', 'ident', 'from', 'to', 'duration', 'dayLandings', 'nightLandings', 'source', 'logbook', 'remarks', ...Object.keys(EXTRA_COLUMNS)];
   const rows = (results || []).map(rowToFlight);
   const lines = [cols.join(',')];
   for (const r of rows) {

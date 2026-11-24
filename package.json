@@ -2,7 +2,7 @@
   "name": "rice-flight-log",
   "version": "1.0.0",
   "private": true,
-  "description": "Rice family flight logbook — Cloudflare Worker + D1 dashboard",
+  "description": "Rice family flight logbook \u2014 Cloudflare Worker + D1 dashboard",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
@@ -10,7 +10,9 @@
     "db:migrate:local": "wrangler d1 execute rice-flight-log --local --file=./schema.sql",
     "db:migrate:remote": "wrangler d1 execute rice-flight-log --remote --file=./schema.sql",
     "db:seed:local": "wrangler d1 execute rice-flight-log --local --file=./seed.sql",
-    "db:seed:remote": "wrangler d1 execute rice-flight-log --remote --file=./seed.sql"
+    "db:seed:remote": "wrangler d1 execute rice-flight-log --remote --file=./seed.sql",
+    "db:add-columns:remote": "wrangler d1 execute rice-flight-log --remote --file=./migrations/0002_add_logbook_columns.sql",
+    "db:load-lb1-3:remote": "wrangler d1 execute rice-flight-log --remote --file=./migrations/0003_load_LB1-LB3.sql"
   },
   "devDependencies": {
     "wrangler": "^3.90.0",

@@ -1,4 +1,6 @@
-export interface Env {
+import { accessUser, AuthEnv } from './auth';
+
+export interface Env extends AuthEnv {
   DB: D1Database;
   ASSETS: Fetcher;
 }
@@ -228,25 +230,43 @@ export default {
     const { pathname } = url;
 
     try {
+      // ---- Public, read-only ----
       if (pathname === '/api/flights' && request.method === 'GET') {
         return await listFlights(env);
-      }
-      if (pathname === '/api/flights' && request.method === 'POST') {
-        const body = (await request.json()) as FlightRecord;
-        return await createFlight(env, body);
-      }
-      const flightMatch = pathname.match(/^\/api\/flights\/([^/]+)$/);
-      if (flightMatch && request.method === 'PUT') {
-        const body = (await request.json()) as FlightRecord;
-        return await updateFlight(env, flightMatch[1], body);
-      }
-      if (flightMatch && request.method === 'DELETE') {
-        return await deleteFlight(env, flightMatch[1]);
       }
       if (pathname === '/api/export.csv' && request.method === 'GET') {
         return await exportCsv(env);
       }
-      if (pathname.startsWith('/api/')) {
+
+      // ---- Sign-in landing: Access protects /admin/*, then we bounce back to the dashboard ----
+      if (pathname === '/admin' || pathname === '/admin/') {
+        return Response.redirect(new URL('/?signedin=1', url).toString(), 302);
+      }
+
+      // ---- Writes: /admin/api/* (behind Cloudflare Access). Old /api write paths kept for the same checks. ----
+      const writeBase = pathname.startsWith('/admin/api/') ? pathname.slice('/admin'.length) : pathname;
+      const isWrite = writeBase.startsWith('/api/flights') && request.method !== 'GET';
+      if (pathname === '/admin/api/whoami') {
+        const user = await accessUser(request, env);
+        return json({ signedIn: !!user, email: user });
+      }
+      if (isWrite) {
+        const user = await accessUser(request, env);
+        if (!user) return json({ error: 'sign in required' }, { status: 401 });
+        if (writeBase === '/api/flights' && request.method === 'POST') {
+          const body = (await request.json()) as FlightRecord;
+          return await createFlight(env, body);
+        }
+        const flightMatch = writeBase.match(/^\/api\/flights\/([^/]+)$/);
+        if (flightMatch && request.method === 'PUT') {
+          const body = (await request.json()) as FlightRecord;
+          return await updateFlight(env, decodeURIComponent(flightMatch[1]), body);
+        }
+        if (flightMatch && request.method === 'DELETE') {
+          return await deleteFlight(env, decodeURIComponent(flightMatch[1]));
+        }
+      }
+      if (pathname.startsWith('/api/') || pathname.startsWith('/admin/')) {
         return json({ error: 'not found' }, { status: 404 });
       }
     } catch (err) {

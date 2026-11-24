@@ -190,12 +190,33 @@
   .formactions{ display:flex; gap:8px; margin-top:12px; }
   .formstatus{ font-size:12px; color:var(--ink-muted); margin-left:4px; align-self:center; }
 
+  .formgrid select, .rfilters select, .rfilters input{
+    font-family:"IBM Plex Mono", monospace; font-size:13px; padding:7px 9px; border:1px solid var(--border);
+    border-radius:6px; background:var(--bg); color:var(--ink);
+  }
+  .formgrid label.wide{ grid-column:span 3; }
+  .rowact{ background:none; border:none; color:var(--accent2); font-size:12px; padding:0 4px; text-decoration:underline; }
+  .rowact.del{ color:var(--warn); }
+  .signedin-only{ display:none !important; }
+  body.signed-in .signedin-only{ display:inline-flex !important; }
+  body.signed-in th.signedin-only, body.signed-in td.signedin-only{ display:table-cell !important; }
+  body.signed-in .signedout-only{ display:none !important; }
+  .rfilters{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }
+  .rfilters label{ display:flex; flex-direction:column; gap:4px; font-size:11px; color:var(--ink-muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+  .rgrid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+  .rcell{ background:var(--surface-alt); border-radius:8px; padding:10px 12px; }
+  .rcell .l{ font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-muted); font-weight:600; }
+  .rcell .v{ font-family:"Big Shoulders Display", sans-serif; font-weight:800; font-size:26px; font-variant-numeric:tabular-nums; }
+  .rnote{ font-size:12px; color:var(--ink-muted); margin-top:10px; }
+
   footer{ margin-top:36px; padding-top:16px; border-top:1px solid var(--border); font-size:12px; color:var(--ink-faint); }
 
   @media (max-width: 900px){
     .kpis{ grid-template-columns:repeat(2,1fr); }
     .grid2{ grid-template-columns:1fr; }
     .formgrid{ grid-template-columns:repeat(2,1fr); }
+    .rfilters, .rgrid{ grid-template-columns:repeat(2,1fr); }
+    .formgrid label.wide{ grid-column:span 2; }
   }
 </style>
 </head>
@@ -215,7 +236,8 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
         Export CSV
       </button>
-      <button class="btn primary" id="addFlightBtn">
+      <a class="btn signedout-only" id="signInBtn" href="/admin/" title="Sign in with your email to add or edit flights">Sign in to edit</a>
+      <button class="btn primary signedin-only" id="addFlightBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
         Add flight
       </button>
@@ -225,9 +247,10 @@
   <div class="notice">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-5"/><path d="M12 8h.01"/></svg>
     <div>
-      <b>New capture method confirmed working:</b> a 10-photo test batch shooting each open spread in a single photo (both facing pages at once) came back fully legible on both sides. 3 of those pages matched already-known flights exactly (row-level aircraft, route &amp; remarks); the other 6 are loaded as page totals for now, pending a closer row-by-row pass.
-      See <button class="linklike" id="howLink">How this works</button> for details.
+      <b>All four logbooks are in:</b> LB1 (1983&ndash;86), LB2 (1986&ndash;2002), Book 1 (2002&ndash;24) and LB3 (2024&ndash;now). Use the <button class="linklike" id="reportLink">Hours report</button> tab to total hours by aircraft, date range or type of time.
+      <span id="whoami"></span>
     </div>
+  </div>
   </div>
 
   <section class="kpis" id="kpis">
@@ -252,22 +275,38 @@
 
   <div class="tabbar">
     <button class="tabbtn active" data-tab="flights">Flights <span id="ct-flights"></span></button>
+    <button class="tabbtn" data-tab="report">Hours report</button>
     <button class="tabbtn" data-tab="about">How this works</button>
   </div>
 
   <div class="tabpanel active" id="tab-flights">
     <div class="addform" id="addForm">
-      <h3>Add a flight</h3>
+      <h3 id="formTitle">Add a flight</h3>
       <div class="formgrid">
-        <label>Date <input type="text" id="f-date" placeholder="4/16/2003"></label>
-        <label>Aircraft <input type="text" id="f-aircraft" placeholder="C-525A"></label>
-        <label>Ident <input type="text" id="f-ident" placeholder="N271GS"></label>
-        <label>From <input type="text" id="f-from" placeholder="ICT"></label>
-        <label>To <input type="text" id="f-to" placeholder="TRI"></label>
-        <label>Duration (hrs) <input type="text" id="f-duration" placeholder="2.0"></label>
-        <label>Day landings <input type="text" id="f-day" placeholder="1"></label>
-        <label>Night landings <input type="text" id="f-night" placeholder="0"></label>
-        <label>Source photo <input type="text" id="f-source" placeholder="IMG_0221"></label>
+        <label>Date <input type="text" id="f-date" placeholder="9/18/2026"></label>
+        <label>Aircraft <input type="text" id="f-aircraft" placeholder="SR22T"></label>
+        <label>Ident <input type="text" id="f-ident" placeholder="N212LL"></label>
+        <label>From <input type="text" id="f-from" placeholder="FWS"></label>
+        <label>To <input type="text" id="f-to" placeholder="TDW"></label>
+        <label>Total hrs <input type="text" id="f-duration" placeholder="2.0"></label>
+        <label>Day landings <input type="text" id="f-dayLandings" placeholder="1"></label>
+        <label>Night landings <input type="text" id="f-nightLandings" placeholder="0"></label>
+        <label>Single-engine <input type="text" id="f-singleEngine"></label>
+        <label>Multi-engine <input type="text" id="f-multiEngine"></label>
+        <label>Jet <input type="text" id="f-jet"></label>
+        <label>Night <input type="text" id="f-nightTime"></label>
+        <label>Actual instr. <input type="text" id="f-actualInstrument"></label>
+        <label>Sim. instr. (hood) <input type="text" id="f-simulatedInstrument"></label>
+        <label>Simulator <input type="text" id="f-simTrainer"></label>
+        <label>Approaches <input type="text" id="f-approaches"></label>
+        <label>Approach types <input type="text" id="f-approachTypes" placeholder="ILS/RNAV"></label>
+        <label>Cross-country <input type="text" id="f-crossCountry"></label>
+        <label>PIC <input type="text" id="f-pic"></label>
+        <label>SIC <input type="text" id="f-sic"></label>
+        <label>Dual received <input type="text" id="f-dualReceived"></label>
+        <label>Logbook <input type="text" id="f-logbook" placeholder="LB3"></label>
+        <label>Source photo <input type="text" id="f-source" placeholder="LB3/IMG_0124"></label>
+        <label class="wide">Remarks <input type="text" id="f-remarks"></label>
       </div>
       <div class="formactions">
         <button class="btn primary" id="saveFlightBtn">Save flight</button>
@@ -285,10 +324,32 @@
       <table>
         <thead><tr>
           <th>Date</th><th>Aircraft</th><th>Ident</th><th>From</th><th>To</th>
-          <th class="num">Hrs</th><th class="num">Day Ldg</th><th class="num">Night Ldg</th><th>Source</th><th>Remarks</th>
+          <th class="num">Hrs</th><th class="num">Day Ldg</th><th class="num">Night Ldg</th><th>Source</th><th>Remarks</th><th class="signedin-only"></th>
         </tr></thead>
         <tbody id="flightsBody"></tbody>
       </table>
+    </div>
+  </div>
+
+  <div class="tabpanel" id="tab-report">
+    <div class="panel">
+      <h2>Hours report</h2>
+      <div class="panel-sub">Pick any combination of filters. Totals update instantly from the logbook data.</div>
+      <div class="rfilters">
+        <label>Aircraft contains <input type="text" id="r-aircraft" placeholder="e.g. SR22, M20, 525"></label>
+        <label>Tail number <input type="text" id="r-ident" placeholder="e.g. N212LL"></label>
+        <label>From date <input type="date" id="r-from"></label>
+        <label>To date <input type="date" id="r-to"></label>
+        <label>Logbook <select id="r-logbook"><option value="">All books</option><option>LB1</option><option>LB2</option><option value="1">Book 1</option><option>LB3</option></select></label>
+      </div>
+      <div class="rgrid" id="rTotals"></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Aircraft</th><th class="num">Flights</th><th class="num">Total hrs</th><th class="num">PIC</th><th class="num">Night</th><th class="num">Actual instr.</th><th class="num">First flown</th><th class="num">Last flown</th></tr></thead>
+          <tbody id="rByAircraft"></tbody>
+        </table>
+      </div>
+      <div class="rnote">PIC, night, instrument and cross-country columns were only recorded for LB1, LB2 and LB3; Book 1 (2002&ndash;2024) has total hours and landings only, so those totals undercount that period.</div>
     </div>
   </div>
 
@@ -433,7 +494,7 @@
     }
     document.getElementById('ct-flights').textContent = '(' + state.flights.length + ')';
     if(!rows.length){
-      body.innerHTML = '<tr class="empty-row"><td colspan="10">' + (state.flightsReady ? 'No flights match your search.' : 'Loading…') + '</td></tr>';
+      body.innerHTML = '<tr class="empty-row"><td colspan="11">' + (state.flightsReady ? 'No flights match your search.' : 'Loading…') + '</td></tr>';
       return;
     }
     body.innerHTML = rows.map(function(f){
@@ -448,12 +509,60 @@
         '<td class="num">' + (f.nightLandings||0) + '</td>' +
         '<td><span class="pill src">' + esc(f.source) + '</span></td>' +
         '<td class="remarks">' + esc(f.remarks||'') + '</td>' +
+        '<td class="signedin-only" style="white-space:nowrap"><button class="rowact" data-edit="' + esc(f.id) + '">Edit</button><button class="rowact del" data-del="' + esc(f.id) + '">Delete</button></td>' +
         '</tr>';
     }).join('');
   }
 
+  function isoToKey(v){ if(!v) return 0; var p = v.split('-'); return parseInt(p[0],10)*10000 + parseInt(p[1],10)*100 + parseInt(p[2],10); }
+  function keyToDate(k){ if(!k) return ''; var y=Math.floor(k/10000), m=Math.floor(k/100)%100, d=k%100; return m+'/'+d+'/'+y; }
+
+  function renderReport(){
+    var ac = document.getElementById('r-aircraft').value.toLowerCase().split(',').map(function(x){return x.trim();}).filter(Boolean);
+    var idt = document.getElementById('r-ident').value.trim().toLowerCase();
+    var from = isoToKey(document.getElementById('r-from').value), to = isoToKey(document.getElementById('r-to').value);
+    var lb = document.getElementById('r-logbook').value;
+    var rows = state.flights.filter(function(f){
+      if(ac.length && !ac.some(function(a){ return String(f.aircraft||'').toLowerCase().indexOf(a) !== -1; })) return false;
+      if(idt && String(f.ident||'').toLowerCase().indexOf(idt) === -1) return false;
+      if(lb && String(f.logbook||'') !== lb) return false;
+      var k = parseDateForSort(f.date);
+      if(from && (!k || k < from)) return false;
+      if(to && (!k || k > to)) return false;
+      return true;
+    });
+    function sum(field){ return rows.reduce(function(a,f){ return a + num(f[field]); }, 0); }
+    var cells = [
+      ['Total hours', fmt1(sum('duration'))], ['Flights', rows.length],
+      ['PIC', fmt1(sum('pic'))], ['SIC', fmt1(sum('sic'))],
+      ['Single-engine', fmt1(sum('singleEngine'))], ['Multi-engine', fmt1(sum('multiEngine'))],
+      ['Jet', fmt1(sum('jet'))], ['Night', fmt1(sum('nightTime'))],
+      ['Actual instrument', fmt1(sum('actualInstrument'))], ['Simulated instrument', fmt1(sum('simulatedInstrument'))],
+      ['Simulator', fmt1(sum('simTrainer'))], ['Cross-country', fmt1(sum('crossCountry'))],
+      ['Dual received', fmt1(sum('dualReceived'))], ['Approaches', Math.round(sum('approaches'))],
+      ['Day landings', Math.round(sum('dayLandings'))], ['Night landings', Math.round(sum('nightLandings'))]
+    ];
+    document.getElementById('rTotals').innerHTML = cells.map(function(c){
+      return '<div class="rcell"><div class="l">'+c[0]+'</div><div class="v">'+c[1]+'</div></div>';
+    }).join('');
+    var by = {};
+    rows.forEach(function(f){
+      var key = (f.aircraft || 'Unknown').trim();
+      var b = by[key] || (by[key] = {n:0,hrs:0,pic:0,night:0,act:0,lo:0,hi:0});
+      b.n++; b.hrs += num(f.duration); b.pic += num(f.pic); b.night += num(f.nightTime); b.act += num(f.actualInstrument);
+      var k = parseDateForSort(f.date);
+      if(k){ if(!b.lo || k < b.lo) b.lo = k; if(k > b.hi) b.hi = k; }
+    });
+    var list = Object.keys(by).map(function(k){ return [k, by[k]]; }).sort(function(a,b){ return b[1].hrs - a[1].hrs; });
+    document.getElementById('rByAircraft').innerHTML = list.length ? list.map(function(r){
+      var b = r[1];
+      return '<tr><td>'+esc(r[0])+'</td><td class="num">'+b.n+'</td><td class="num">'+fmt1(b.hrs)+'</td><td class="num">'+fmt1(b.pic)+'</td><td class="num">'+fmt1(b.night)+'</td><td class="num">'+fmt1(b.act)+'</td><td class="num">'+keyToDate(b.lo)+'</td><td class="num">'+keyToDate(b.hi)+'</td></tr>';
+    }).join('') : '<tr class="empty-row"><td colspan="8">No flights match these filters.</td></tr>';
+  }
+
   function renderAll(){
     renderKpis();
+    renderReport();
     renderAircraftChart();
     renderTrendChart();
     renderFlightsTable(document.getElementById('flightSearch').value);
@@ -469,59 +578,97 @@
       document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     });
   });
-  document.getElementById('howLink').addEventListener('click', function(){
-    document.querySelector('.tabbtn[data-tab="about"]').click();
+  ['r-aircraft','r-ident','r-from','r-to','r-logbook'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', renderReport);
+  });
+  document.getElementById('reportLink').addEventListener('click', function(){
+    document.querySelector('.tabbtn[data-tab="report"]').click();
     window.scrollTo({top: document.querySelector('.tabbar').offsetTop - 20, behavior:'smooth'});
   });
 
   document.getElementById('flightSearch').addEventListener('input', function(){ renderFlightsTable(this.value); });
 
-  document.getElementById('addFlightBtn').addEventListener('click', function(){
+  var FORM_FIELDS = ['date','aircraft','ident','from','to','duration','dayLandings','nightLandings','singleEngine','multiEngine','jet',
+    'nightTime','actualInstrument','simulatedInstrument','simTrainer','approaches','approachTypes','crossCountry','pic','sic','dualReceived',
+    'logbook','source','remarks'];
+  var TEXT_FIELDS = {date:1,aircraft:1,ident:1,from:1,to:1,approachTypes:1,logbook:1,source:1,remarks:1};
+  var editingId = null;
+
+  function openForm(f){
+    editingId = f ? f.id : null;
+    document.getElementById('formTitle').textContent = f ? 'Edit flight' : 'Add a flight';
+    FORM_FIELDS.forEach(function(k){
+      var v = f ? f[k] : (k === 'logbook' ? 'LB3' : '');
+      document.getElementById('f-' + k).value = (v == null ? '' : v);
+    });
+    document.getElementById('formStatus').textContent = '';
     document.getElementById('addForm').classList.add('open');
-  });
-  document.getElementById('cancelFlightBtn').addEventListener('click', function(){
+    document.getElementById('addForm').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  function closeForm(){
+    editingId = null;
     document.getElementById('addForm').classList.remove('open');
     document.getElementById('formStatus').textContent = '';
+  }
+  document.getElementById('addFlightBtn').addEventListener('click', function(){ openForm(null); });
+  document.getElementById('cancelFlightBtn').addEventListener('click', closeForm);
+
+  document.getElementById('flightsBody').addEventListener('click', function(e){
+    var t = e.target;
+    if(t.dataset.edit){
+      var f = state.flights.filter(function(x){ return x.id === t.dataset.edit; })[0];
+      if(f) openForm(f);
+    }
+    if(t.dataset.del){
+      var g = state.flights.filter(function(x){ return x.id === t.dataset.del; })[0];
+      if(!g || !confirm('Delete the ' + g.date + ' ' + (g.aircraft||'') + ' ' + (g.from||'') + '-' + (g.to||'') + ' flight? This cannot be undone.')) return;
+      fetch('/admin/api/flights/' + encodeURIComponent(g.id), { method:'DELETE', credentials:'same-origin' }).then(function(res){
+        if(res.status === 401){ alert('Your sign-in has expired. Please sign in again.'); location.href = '/admin/'; return; }
+        if(!res.ok) throw new Error('delete failed');
+        return loadFlights();
+      }).catch(function(err){ alert('Could not delete (' + err.message + ').'); });
+    }
   });
 
   document.getElementById('saveFlightBtn').addEventListener('click', function(){
     var status = document.getElementById('formStatus');
-    var rec = {
-      date: document.getElementById('f-date').value.trim(),
-      aircraft: document.getElementById('f-aircraft').value.trim(),
-      ident: document.getElementById('f-ident').value.trim(),
-      from: document.getElementById('f-from').value.trim(),
-      to: document.getElementById('f-to').value.trim(),
-      duration: num(document.getElementById('f-duration').value),
-      dayLandings: num(document.getElementById('f-day').value),
-      nightLandings: num(document.getElementById('f-night').value),
-      source: document.getElementById('f-source').value.trim(),
-      logbook: "1"
-    };
+    var rec = {};
+    FORM_FIELDS.forEach(function(k){
+      var v = document.getElementById('f-' + k).value.trim();
+      if(TEXT_FIELDS[k]) rec[k] = v || null;
+      else rec[k] = v === '' ? null : num(v);
+    });
+    rec.duration = rec.duration || 0; rec.dayLandings = rec.dayLandings || 0; rec.nightLandings = rec.nightLandings || 0;
     if(!rec.date || !rec.aircraft){ status.textContent = 'Date and aircraft are required.'; return; }
     status.textContent = 'Saving…';
-    fetch('/api/flights', {
-      method: 'POST',
+    var url = editingId ? '/admin/api/flights/' + encodeURIComponent(editingId) : '/admin/api/flights';
+    fetch(url, {
+      method: editingId ? 'PUT' : 'POST',
+      credentials: 'same-origin',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(rec)
     }).then(function(res){
+      if(res.status === 401) throw new Error('sign-in expired, please sign in again');
       if(!res.ok) throw new Error('save failed');
       return res.json();
     }).then(function(){
       status.textContent = 'Saved.';
-      ['f-date','f-aircraft','f-ident','f-from','f-to','f-duration','f-day','f-night','f-source'].forEach(function(id){
-        document.getElementById(id).value = '';
-      });
       return loadFlights();
     }).then(function(){
-      setTimeout(function(){
-        document.getElementById('addForm').classList.remove('open');
-        status.textContent = '';
-      }, 700);
+      setTimeout(closeForm, 700);
     }).catch(function(err){
       status.textContent = 'Could not save (' + (err && err.message || 'error') + ').';
     });
   });
+
+  function checkSignIn(){
+    return fetch('/admin/api/whoami', { credentials:'same-origin' }).then(function(res){
+      return res.ok ? res.json() : { signedIn:false };
+    }).catch(function(){ return { signedIn:false }; }).then(function(w){
+      document.body.classList.toggle('signed-in', !!w.signedIn);
+      document.getElementById('whoami').textContent = w.signedIn && w.email && w.email.indexOf('@') > 0 ? ' Signed in as ' + w.email + '.' : '';
+    });
+  }
 
   document.getElementById('exportBtn').addEventListener('click', function(){
     window.location.href = '/api/export.csv';
@@ -550,6 +697,7 @@
 
   renderAll();
   loadFlights();
+  checkSignIn();
 })();
 </script>
 </body>

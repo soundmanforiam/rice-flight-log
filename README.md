@@ -152,3 +152,19 @@ npm run db:load-lb1-3:remote
 
 The load file uses `INSERT OR REPLACE`, so it is safe to re-run. **Do not run `db:migrate:remote`** on the
 live database: `schema.sql` drops and recreates the table.
+
+## Sign-in for editing (Cloudflare Access)
+
+The dashboard and `GET /api/flights` stay public. All writes go to `/admin/api/flights` and require a
+Cloudflare Access sign-in (email one-time code). Setup, in the Cloudflare account that hosts the Worker:
+
+1. Zero Trust → Access → Applications → Add a self-hosted app for `flight-log.riceaviation.com/admin`
+   (path `admin`), with a policy allowing Russell's (and Charlie's) email addresses.
+2. Copy the app's **Application Audience (AUD) tag** and the team domain (`<team>.cloudflareaccess.com`).
+3. Set Worker vars `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD`. The Worker verifies the Access JWT itself.
+
+"Sign in to edit" on the dashboard sends the user to `/admin/`, which Access protects and then bounces
+back to the dashboard with Add / Edit / Delete enabled. Until Access is configured, writes are refused
+unless the var `ALLOW_OPEN_WRITES` is `"true"`.
+
+The **Hours report** tab totals any filter combination (aircraft, tail, date range, logbook) client-side.
